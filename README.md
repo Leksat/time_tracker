@@ -1,0 +1,1 @@
+Very simple time tracker which saves its data in the localStorage.
