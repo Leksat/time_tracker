@@ -2,3 +2,25 @@
 #task-template {
   display: none;
 }
+
+@-webkit-keyframes working {
+     70% {background-color: white;}
+     75% {background-color: #E4FFD4;}
+     80% {background-color: white;}
+}
+
+.working {
+  -webkit-animation: working 30s infinite alternate;
+  background-color: white;
+}
+
+@-webkit-keyframes idle {
+     70% {background-color: white;}
+     75% {background-color: #FF5C00;}
+     80% {background-color: white;}
+}
+
+.idle {
+  -webkit-animation: idle 30s infinite alternate;
+  background-color: white;
+}

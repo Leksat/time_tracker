@@ -14,6 +14,8 @@ class TimeTracker {
   List<Task> tasks = [];
   Timer autoSave;
   DivElement tasksDiv = document.query('#tasks');
+  Element body = document.query('body');
+  int activeTasks = 0;
 
   TimeTracker() {
     // load from storage
@@ -75,6 +77,21 @@ class TimeTracker {
     }
     return {};
   }
+  
+  void setState(active) {
+    if (active) {
+      activeTasks++;
+    } else {
+      activeTasks--;
+    }
+    if (activeTasks > 0) {
+      body.classes.add('working');
+      body.classes.remove('idle');
+    } else {
+      body.classes.add('idle');
+      body.classes.remove('working');
+    }
+  }
 }
 
 /**
@@ -89,6 +106,7 @@ class Task {
   DivElement tasksDiv;
   TimeTracker timeTracker;
   Timer timer;
+  bool working = false;
 
   Task(this.timeTracker, [this.name = '', this.seconds = 0]) {
     // copy task from template
@@ -118,18 +136,8 @@ class Task {
         timeInput.classes.add('error');
       }
     });
-    taskDiv.query('.start').on.click.add((Event event) {
-      timeInput.disabled = true;
-      var started = new Date.now().subtract(new Duration(seconds: seconds));
-      timer = new Timer.repeating(1000, (timer) {
-        seconds = (new Date.now()).difference(started).inSeconds;
-        timeInput.value = formatTimeString(seconds);
-      });
-    });
-    taskDiv.query('.stop').on.click.add((Event event) {
-      timer.cancel();
-      timeInput.disabled = false;
-    });
+    taskDiv.query('.start').on.click.add((event) => this.start());
+    taskDiv.query('.stop').on.click.add((event) => this.stop());
     taskDiv.query('.delete').on.click.add((Event event) {
       if (window.confirm('Do you really want to remove this task?')) {
         this.remove();
@@ -139,9 +147,29 @@ class Task {
   }
   
   void remove() {
+    stop();
     taskDiv.remove();
-    if (timer is Timer) {
+  }
+  
+  void start() {
+    if (!working) {
+      timeInput.disabled = true;
+      var started = new Date.now().subtract(new Duration(seconds: seconds));
+      timer = new Timer.repeating(1000, (timer) {
+        seconds = (new Date.now()).difference(started).inSeconds;
+        timeInput.value = formatTimeString(seconds);
+      });
+      working = true;
+      timeTracker.setState(true);
+    }
+  }
+  
+  void stop() {
+    if (working) {
       timer.cancel();
+      timeInput.disabled = false;
+      working = false;
+      timeTracker.setState(false);
     }
   }
   
