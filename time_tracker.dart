@@ -1,6 +1,7 @@
 
 #import('dart:html');
 #import('dart:isolate');
+#import('dart:json');
 
 void main() {
   new TimeTracker();
@@ -16,11 +17,13 @@ class TimeTracker {
 
   TimeTracker() {
     // load from storage
-    if (window.localStorage.isEmpty()) {
+    var data = _load();
+    
+    if (data.isEmpty()) {
       tasks.add(new Task(this));
     } else {
-      window.localStorage.forEach((name, seconds) {
-        tasks.add(new Task(this, name, int.parse(seconds)));
+      data.forEach((name, seconds) {
+        tasks.add(new Task(this, name, seconds));
       });
     }
     
@@ -41,24 +44,36 @@ class TimeTracker {
     // init autosave
     autoSave = new Timer.repeating(1000, (timer) => this.saveAll());
   }
-
-  updateState(active) {
-    if (active) {
-      autoSave = new Timer(10000, (timer) => this.saveAll());
-    } else if (autoSave is Timer) {
-      autoSave.cancel();
-    }
-  }
   
   saveAll() {
-    window.localStorage.clear();
+    var data = {};
     tasks.forEach((task) {
-      if (window.localStorage.containsKey(task.name)) {
-        window.localStorage[task.name] = (int.parse(window.localStorage[task.name]) + task.seconds).toString();
+      if (data.containsKey(task.name)) {
+        data[task.name] += task.seconds;
       } else {
-        window.localStorage[task.name] = task.seconds.toString();
+        data[task.name] = task.seconds;
       }
     });
+    _save(data);
+  }
+  
+  void _save(Map<String, int> data) {
+    window.localStorage['time_tracker'] = JSON.stringify(data);
+  }
+
+  Map<String, int> _load() {
+    if (window.localStorage.containsKey('time_tracker')) {
+      try {
+        Map data = JSON.parse(window.localStorage['time_tracker']);
+        data.getKeys().forEach((key) {
+          if (key is! String || data[key] is! int) {
+            data.remove(key);
+          }
+        });
+        return data;
+      } on Exception catch (e) {} 
+    }
+    return {};
   }
 }
 

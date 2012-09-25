@@ -22,6 +22,9 @@ $$.DateImplementation = {"":
  operator$lt$1: function(other) {
   return $.lt(this.millisecondsSinceEpoch, other.get$millisecondsSinceEpoch());
 },
+ operator$le$1: function(other) {
+  return $.le(this.millisecondsSinceEpoch, other.get$millisecondsSinceEpoch());
+},
  operator$gt$1: function(other) {
   return $.gt(this.millisecondsSinceEpoch, other.get$millisecondsSinceEpoch());
 },
@@ -614,14 +617,14 @@ $$.HashMapImplementation = {"":
  getKeys$0: function() {
   var t1 = {};
   var list = $.ListImplementation_List($.get$length(this));
-  t1.i_10 = 0;
+  t1.i_1 = 0;
   this.forEach$1(new $.HashMapImplementation_getKeys__(list, t1));
   return list;
 },
  getValues$0: function() {
   var t1 = {};
   var list = $.ListImplementation_List($.get$length(this));
-  t1.i_1 = 0;
+  t1.i_10 = 0;
   this.forEach$1(new $.HashMapImplementation_getValues__(list, t1));
   return list;
 },
@@ -833,14 +836,14 @@ $$.LinkedHashMapImplementation = {"":
  getKeys$0: function() {
   var t1 = {};
   var list = $.ListImplementation_List($.get$length(this));
-  t1.index_10 = 0;
+  t1.index_1 = 0;
   $.forEach(this._lib0_list, new $.LinkedHashMapImplementation_getKeys__(list, t1));
   return list;
 },
  getValues$0: function() {
   var t1 = {};
   var list = $.ListImplementation_List($.get$length(this));
-  t1.index_1 = 0;
+  t1.index_10 = 0;
   $.forEach(this._lib0_list, new $.LinkedHashMapImplementation_getValues__(list, t1));
   return list;
 },
@@ -1382,14 +1385,35 @@ $$.TimeTracker = {"":
  ["tasks?", "autoSave", "tasksDiv?"],
  "super": "Object",
  saveAll$0: function() {
-  $.clear($.window().get$localStorage());
-  $.forEach(this.tasks, new $.TimeTracker_saveAll_anon());
+  var data = $.makeLiteralMap([]);
+  $.forEach(this.tasks, new $.TimeTracker_saveAll_anon(data));
+  this._save$1(data);
+},
+ _save$1: function(data) {
+  $.indexSet($.window().get$localStorage(), 'time_tracker', $.JSON_stringify(data));
+},
+ _load$0: function() {
+  if ($.window().get$localStorage().containsKey$1('time_tracker') === true)
+    try {
+      var data = $.JSON_parse($.index($.window().get$localStorage(), 'time_tracker'));
+      $.forEach(data.getKeys$0(), new $.TimeTracker__load_anon(data));
+      return data;
+    } catch (exception) {
+      var t1 = $.unwrapException(exception);
+      if (typeof t1 === 'object' && t1 !== null && !!t1.is$Exception)
+        ;
+      else
+        throw exception;
+    }
+
+  return $.makeLiteralMap([]);
 },
  TimeTracker$0: function() {
-  if ($.isEmpty($.window().get$localStorage()) === true)
+  var data = this._load$0();
+  if ($.isEmpty(data) === true)
     this.tasks.push($.Task$(this, '', 0));
   else
-    $.forEach($.window().get$localStorage(), new $.anon(this));
+    $.forEach(data, new $.anon(this));
   $.add$1($.document().query$1('#new-task').get$on().get$click(), new $.anon0(this));
   $.add$1($.document().query$1('#clear-all').get$on().get$click(), new $.anon1(this));
   this.autoSave = $._TimerFactory_Timer$repeating(1000, new $.anon2(this));
@@ -3109,12 +3133,560 @@ $$._Timer = {"":
  is$Timer: true
 };
 
+$$.JsonUnsupportedObjectError = {"":
+ ["unsupportedObject", "cause"],
+ "super": "Object",
+ toString$0: function() {
+  if (!(this.cause == null))
+    return 'Calling toJson method on object failed.';
+  else
+    return 'Object toJson method returns non-serializable value.';
+}
+};
+
+$$._JsonParser = {"":
+ ["json", "length?", "position"],
+ "super": "Object",
+ parseToplevel$0: function() {
+  var result = this.parseValue$0();
+  if (!(this.token$0() == null))
+    this.error$1('Junk at the end of JSON input');
+  return result;
+},
+ parseValue$0: function() {
+  var token = this.token$0();
+  if (token == null)
+    this.error$1('Nothing to parse');
+  switch (token) {
+    case 34:
+      return this.parseString$0();
+    case 45:
+      return this.parseNumber$0();
+    case 110:
+      return this.expectKeyword$2('null', null);
+    case 102:
+      return this.expectKeyword$2('false', false);
+    case 116:
+      return this.expectKeyword$2('true', true);
+    case 123:
+      return this.parseObject$0();
+    case 91:
+      return this.parseList$0();
+    default:
+      this.error$1('Unexpected token');
+  }
+},
+ expectKeyword$2: function(word, value) {
+  for (var t1 = word.length, i = 0; i < t1; ++i) {
+    if (!$.eqB(this.char$0(), $.charCodeAt(word, i)))
+      this.error$1('Expected keyword \'' + word + '\'');
+    this.position = $.add(this.position, 1);
+  }
+  return value;
+},
+ parseObject$0: function() {
+  var object = $.makeLiteralMap([]);
+  if (typeof object !== 'object' || object === null || (object.constructor !== Array || !!object.immutable$list) && !object.is$JavaScriptIndexingBehavior())
+    return this.parseObject$0$bailout(1, object);
+  this.position = $.add(this.position, 1);
+  if (this.isToken$1(125) !== true) {
+    for (; true;) {
+      var key = this.parseString$0();
+      if (this.isToken$1(58) !== true)
+        this.error$1('Expected \':\' when parsing object');
+      this.position = $.add(this.position, 1);
+      var t1 = this.parseValue$0();
+      if (key !== (key | 0))
+        throw $.iae(key);
+      if (key < 0 || key >= object.length)
+        throw $.ioore(key);
+      object[key] = t1;
+      if (this.isToken$1(44) !== true)
+        break;
+      this.position = $.add(this.position, 1);
+    }
+    if (this.isToken$1(125) !== true)
+      this.error$1('Expected \'}\' at end of object');
+  }
+  this.position = $.add(this.position, 1);
+  return object;
+},
+ parseObject$0$bailout: function(state, object) {
+  this.position = $.add(this.position, 1);
+  if (this.isToken$1(125) !== true) {
+    for (; true;) {
+      var key = this.parseString$0();
+      if (this.isToken$1(58) !== true)
+        this.error$1('Expected \':\' when parsing object');
+      this.position = $.add(this.position, 1);
+      $.indexSet(object, key, this.parseValue$0());
+      if (this.isToken$1(44) !== true)
+        break;
+      this.position = $.add(this.position, 1);
+    }
+    if (this.isToken$1(125) !== true)
+      this.error$1('Expected \'}\' at end of object');
+  }
+  this.position = $.add(this.position, 1);
+  return object;
+},
+ parseList$0: function() {
+  var list = [];
+  this.position = $.add(this.position, 1);
+  if (this.isToken$1(93) !== true) {
+    for (; true;) {
+      list.push(this.parseValue$0());
+      if (this.isToken$1(44) !== true)
+        break;
+      this.position = $.add(this.position, 1);
+    }
+    if (this.isToken$1(93) !== true)
+      this.error$1('Expected \']\' at end of list');
+  }
+  this.position = $.add(this.position, 1);
+  return list;
+},
+ parseString$0: function() {
+  if (this.isToken$1(34) !== true)
+    this.error$1('Expected string literal');
+  this.position = $.add(this.position, 1);
+  var charCodes = $.ListImplementation_List(null);
+  for (var t1 = this.json; true;) {
+    var c = this.char$0();
+    if ($.eqB(c, 34)) {
+      this.position = $.add(this.position, 1);
+      break;
+    }
+    if ($.eqB(c, 92)) {
+      this.position = $.add(this.position, 1);
+      if ($.eqB(this.position, $.get$length(this)))
+        this.error$1('\\ at the end of input');
+      switch (this.char$0()) {
+        case 34:
+          c = 34;
+          break;
+        case 92:
+          c = 92;
+          break;
+        case 47:
+          c = 47;
+          break;
+        case 98:
+          c = 8;
+          break;
+        case 110:
+          c = 10;
+          break;
+        case 114:
+          c = 13;
+          break;
+        case 102:
+          c = 12;
+          break;
+        case 116:
+          c = 9;
+          break;
+        case 117:
+          if ($.gtB($.add(this.position, 5), $.get$length(this)))
+            this.error$1('Invalid unicode esacape sequence');
+          var codeString = $.substring$2(t1, $.add(this.position, 1), $.add(this.position, 5));
+          try {
+            c = $.int_parse('0x' + $.S(codeString));
+          } catch (exception) {
+            $.unwrapException(exception);
+            this.error$1('Invalid unicode esacape sequence');
+          }
+
+          this.position = $.add(this.position, 4);
+          break;
+        default:
+          this.error$1('Invalid esacape sequence in string literal');
+      }
+    }
+    charCodes.push(c);
+    this.position = $.add(this.position, 1);
+  }
+  return $.StringImplementation_String$fromCharCodes(charCodes);
+},
+ parseNumber$0: function() {
+  if (this.isToken$1(45) !== true)
+    this.error$1('Expected number literal');
+  var startPos = this.position;
+  var char$ = this.char$0();
+  if (char$ === 45)
+    char$ = this.nextChar$0();
+  if (char$ === 48)
+    char$ = this.nextChar$0();
+  else if (this.isDigit$1(char$) === true) {
+    char$ = this.nextChar$0();
+    for (; this.isDigit$1(char$) === true;)
+      char$ = this.nextChar$0();
+  } else
+    this.error$1('Expected digit when parsing number');
+  if (char$ === 46) {
+    char$ = this.nextChar$0();
+    if (this.isDigit$1(char$) === true) {
+      char$ = this.nextChar$0();
+      for (; this.isDigit$1(char$) === true;)
+        char$ = this.nextChar$0();
+      var isInt = false;
+    } else {
+      this.error$1('Expected digit following comma');
+      isInt = true;
+    }
+  } else
+    isInt = true;
+  if (char$ === 101 || char$ === 69) {
+    char$ = this.nextChar$0();
+    if (char$ === 45 || char$ === 43)
+      char$ = this.nextChar$0();
+    if (this.isDigit$1(char$) === true) {
+      char$ = this.nextChar$0();
+      for (; this.isDigit$1(char$) === true;)
+        char$ = this.nextChar$0();
+      isInt = false;
+    } else
+      this.error$1('Expected digit following \'e\' or \'E\'');
+  }
+  var number = $.substring$2(this.json, startPos, this.position);
+  if (isInt)
+    return $.int_parse(number);
+  else
+    return $.double_parse(number);
+},
+ isDigit$1: function(char$) {
+  if (typeof char$ !== 'number')
+    return this.isDigit$1$bailout(1, char$);
+  return char$ >= 48 && char$ <= 57;
+},
+ isDigit$1$bailout: function(state, char$) {
+  return $.geB(char$, 48) && $.leB(char$, 57);
+},
+ isToken$1: function(tokenKind) {
+  var t1 = this.token$0();
+  if (typeof t1 !== 'number')
+    return this.isToken$1$bailout(1, tokenKind, t1);
+  return t1 === tokenKind;
+},
+ isToken$1$bailout: function(state, tokenKind, t1) {
+  return $.eq(t1, tokenKind);
+},
+ char$0: function() {
+  var t1 = this.position;
+  if (typeof t1 !== 'number')
+    return this.char$0$bailout(1, t1, 0);
+  var t3 = $.get$length(this);
+  if (typeof t3 !== 'number')
+    return this.char$0$bailout(2, t1, t3);
+  if (t1 >= t3)
+    this.error$1('Unexpected end of JSON stream');
+  return $.charCodeAt(this.json, this.position);
+},
+ char$0$bailout: function(state, env0, env1) {
+  switch (state) {
+    case 1:
+      t1 = env0;
+      break;
+    case 2:
+      t1 = env0;
+      t3 = env1;
+      break;
+  }
+  switch (state) {
+    case 0:
+      var t1 = this.position;
+    case 1:
+      state = 0;
+      var t3 = $.get$length(this);
+    case 2:
+      state = 0;
+      if ($.geB(t1, t3))
+        this.error$1('Unexpected end of JSON stream');
+      return $.charCodeAt(this.json, this.position);
+  }
+},
+ nextChar$0: function() {
+  var t1 = this.position;
+  if (typeof t1 !== 'number')
+    return this.nextChar$0$bailout(1, t1, 0);
+  this.position = t1 + 1;
+  t1 = this.position;
+  if (typeof t1 !== 'number')
+    return this.nextChar$0$bailout(2, t1, 0);
+  var t3 = $.get$length(this);
+  if (typeof t3 !== 'number')
+    return this.nextChar$0$bailout(3, t1, t3);
+  if (t1 >= t3)
+    return 0;
+  return $.charCodeAt(this.json, this.position);
+},
+ nextChar$0$bailout: function(state, env0, env1) {
+  switch (state) {
+    case 1:
+      t1 = env0;
+      break;
+    case 2:
+      t1 = env0;
+      break;
+    case 3:
+      t1 = env0;
+      t3 = env1;
+      break;
+  }
+  switch (state) {
+    case 0:
+      var t1 = this.position;
+    case 1:
+      state = 0;
+      this.position = $.add(t1, 1);
+      t1 = this.position;
+    case 2:
+      state = 0;
+      var t3 = $.get$length(this);
+    case 3:
+      state = 0;
+      if ($.geB(t1, t3))
+        return 0;
+      return $.charCodeAt(this.json, this.position);
+  }
+},
+ token$0: function() {
+  for (var t1 = this.json; true;) {
+    if ($.geB(this.position, $.get$length(this)))
+      return;
+    var char$ = $.charCodeAt(t1, this.position);
+    var token = $.index($._JsonParser_tokens, char$);
+    if (token === 32) {
+      this.position = $.add(this.position, 1);
+      continue;
+    }
+    if (token == null)
+      return 0;
+    return token;
+  }
+},
+ error$1: function(message) {
+  throw $.$$throw(message);
+},
+ _JsonParser$1: function(json) {
+  if (!($._JsonParser_tokens == null))
+    return;
+  $._JsonParser_tokens = $.ListImplementation_List(126);
+  $.indexSet($._JsonParser_tokens, 9, 32);
+  $.indexSet($._JsonParser_tokens, 10, 32);
+  $.indexSet($._JsonParser_tokens, 13, 32);
+  $.indexSet($._JsonParser_tokens, 32, 32);
+  $.indexSet($._JsonParser_tokens, 48, 45);
+  $.indexSet($._JsonParser_tokens, 49, 45);
+  $.indexSet($._JsonParser_tokens, 50, 45);
+  $.indexSet($._JsonParser_tokens, 51, 45);
+  $.indexSet($._JsonParser_tokens, 52, 45);
+  $.indexSet($._JsonParser_tokens, 53, 45);
+  $.indexSet($._JsonParser_tokens, 54, 45);
+  $.indexSet($._JsonParser_tokens, 55, 45);
+  $.indexSet($._JsonParser_tokens, 56, 45);
+  $.indexSet($._JsonParser_tokens, 57, 45);
+  $.indexSet($._JsonParser_tokens, 45, 45);
+  $.indexSet($._JsonParser_tokens, 123, 123);
+  $.indexSet($._JsonParser_tokens, 125, 125);
+  $.indexSet($._JsonParser_tokens, 91, 91);
+  $.indexSet($._JsonParser_tokens, 93, 93);
+  $.indexSet($._JsonParser_tokens, 34, 34);
+  $.indexSet($._JsonParser_tokens, 58, 58);
+  $.indexSet($._JsonParser_tokens, 44, 44);
+  $.indexSet($._JsonParser_tokens, 110, 110);
+  $.indexSet($._JsonParser_tokens, 116, 116);
+  $.indexSet($._JsonParser_tokens, 102, 102);
+}
+};
+
+$$._JsonStringifier = {"":
+ ["sb?", "seen"],
+ "super": "Object",
+ checkCycle$1: function(object) {
+  for (var t1 = this.seen, i = 0; i < t1.length; ++i) {
+    if (i < 0 || i >= t1.length)
+      throw $.ioore(i);
+    var t2 = t1[i];
+    if (t2 == null ? object == null : t2 === object)
+      throw $.$$throw('Cyclic structure');
+  }
+  t1.push(object);
+},
+ stringifyValue$1: function(object) {
+  if (this.stringifyJsonValue$1(object) !== true) {
+    this.checkCycle$1(object);
+    try {
+      var customJson = object.toJson$0();
+      if (this.stringifyJsonValue$1(customJson) !== true)
+        throw $.$$throw($.JsonUnsupportedObjectError$(object));
+      $.removeLast(this.seen);
+    } catch (exception) {
+      var t1 = $.unwrapException(exception);
+      var e = t1;
+      throw $.$$throw($.JsonUnsupportedObjectError$withCause(object, e));
+    }
+
+  }
+},
+ stringifyJsonValue$1: function(object) {
+  var t1 = {};
+  if (typeof object === 'number') {
+    this.sb.add$1($.toString(object));
+    return true;
+  } else if (object === true) {
+    this.sb.add$1('true');
+    return true;
+  } else if (object === false) {
+    this.sb.add$1('false');
+    return true;
+  } else if (object == null) {
+    this.sb.add$1('null');
+    return true;
+  } else if (typeof object === 'string') {
+    t1 = this.sb;
+    t1.add$1('"');
+    $._JsonStringifier_escape(t1, object);
+    t1.add$1('"');
+    return true;
+  } else if (typeof object === 'object' && object !== null && (object.constructor === Array || object.is$List())) {
+    if (typeof object !== 'object' || object === null || object.constructor !== Array && !object.is$JavaScriptIndexingBehavior())
+      return this.stringifyJsonValue$1$bailout(1, object);
+    this.checkCycle$1(object);
+    var t2 = this.sb;
+    t2.add$1('[');
+    t1 = object.length;
+    if (t1 > 0) {
+      if (0 >= t1)
+        throw $.ioore(0);
+      this.stringifyValue$1(object[0]);
+      for (var i = 1; i < object.length; ++i) {
+        t2.add$1(',');
+        if (i < 0 || i >= object.length)
+          throw $.ioore(i);
+        this.stringifyValue$1(object[i]);
+      }
+    }
+    t2.add$1(']');
+    t1 = this.seen;
+    if (0 >= t1.length)
+      throw $.ioore(0);
+    t1.pop();
+    return true;
+  } else if (typeof object === 'object' && object !== null && object.is$Map()) {
+    this.checkCycle$1(object);
+    t2 = this.sb;
+    t2.add$1('{');
+    t1.first_10 = true;
+    object.forEach$1(new $._JsonStringifier_stringifyJsonValue_anon(this, t1));
+    t2.add$1('}');
+    t2 = this.seen;
+    if (0 >= t2.length)
+      throw $.ioore(0);
+    t2.pop();
+    return true;
+  } else
+    return false;
+},
+ stringifyJsonValue$1$bailout: function(state, env0) {
+  switch (state) {
+    case 1:
+      var object = env0;
+      break;
+  }
+  switch (state) {
+    case 0:
+      var t1 = {};
+    case 1:
+      if (state === 0 && typeof object === 'number') {
+        $.add$1(this.sb, $.toString(object));
+        return true;
+      } else
+        switch (state) {
+          case 0:
+          case 1:
+            if (state === 0 && object === true) {
+              $.add$1(this.sb, 'true');
+              return true;
+            } else
+              switch (state) {
+                case 0:
+                case 1:
+                  if (state === 0 && object === false) {
+                    $.add$1(this.sb, 'false');
+                    return true;
+                  } else
+                    switch (state) {
+                      case 0:
+                      case 1:
+                        if (state === 0 && object == null) {
+                          $.add$1(this.sb, 'null');
+                          return true;
+                        } else
+                          switch (state) {
+                            case 0:
+                            case 1:
+                              if (state === 0 && typeof object === 'string') {
+                                t1 = this.sb;
+                                $.add$1(t1, '"');
+                                $._JsonStringifier_escape(t1, object);
+                                $.add$1(t1, '"');
+                                return true;
+                              } else
+                                switch (state) {
+                                  case 0:
+                                  case 1:
+                                    if (state === 1 || state === 0 && typeof object === 'object' && object !== null && (object.constructor === Array || object.is$List()))
+                                      switch (state) {
+                                        case 0:
+                                        case 1:
+                                          state = 0;
+                                          this.checkCycle$1(object);
+                                          var t2 = this.sb;
+                                          $.add$1(t2, '[');
+                                          if ($.gtB($.get$length(object), 0)) {
+                                            this.stringifyValue$1($.index(object, 0));
+                                            for (var i = 1; $.ltB(i, $.get$length(object)); ++i) {
+                                              $.add$1(t2, ',');
+                                              this.stringifyValue$1($.index(object, i));
+                                            }
+                                          }
+                                          $.add$1(t2, ']');
+                                          t1 = this.seen;
+                                          if (0 < 0 || 0 >= t1.length)
+                                            throw $.ioore(0);
+                                          t1.pop();
+                                          return true;
+                                      }
+                                    else if (typeof object === 'object' && object !== null && object.is$Map()) {
+                                      this.checkCycle$1(object);
+                                      t2 = this.sb;
+                                      $.add$1(t2, '{');
+                                      t1.first_10 = true;
+                                      object.forEach$1(new $._JsonStringifier_stringifyJsonValue_anon(this, t1));
+                                      $.add$1(t2, '}');
+                                      t2 = this.seen;
+                                      if (0 < 0 || 0 >= t2.length)
+                                        throw $.ioore(0);
+                                      t2.pop();
+                                      return true;
+                                    } else
+                                      return false;
+                                }
+                          }
+                    }
+              }
+        }
+  }
+}
+};
+
 $$.anon = {"":
  ["this_0"],
  "super": "Closure",
  call$2: function(name$, seconds) {
   var t1 = this.this_0;
-  $.add$1(t1.get$tasks(), $.Task$(t1, name$, $.int_parse(seconds)));
+  $.add$1(t1.get$tasks(), $.Task$(t1, name$, seconds));
 }
 };
 
@@ -3933,14 +4505,94 @@ $$._CssClassSet_clear_anon = {"":
 }
 };
 
+$$.TimeTracker__load_anon = {"":
+ ["data_0"],
+ "super": "Closure",
+ call$1: function(key) {
+  var t1 = key;
+  if (typeof t1 === 'string') {
+    t1 = $.index(this.data_0, key);
+    var t2 = !(typeof t1 === 'number' && Math.floor(t1) === t1);
+    t1 = t2;
+  } else
+    t1 = true;
+  if (t1)
+    this.data_0.remove$1(key);
+}
+};
+
+$$._StorageImpl_getKeys_anon = {"":
+ ["keys_0"],
+ "super": "Closure",
+ call$2: function(k, v) {
+  return this.keys_0.push(k);
+}
+};
+
+$$.LinkedHashMapImplementation_getKeys__ = {"":
+ ["list_2", "box_0"],
+ "super": "Closure",
+ call$1: function(entry) {
+  var t1 = this.list_2;
+  var t2 = this.box_0;
+  var t3 = t2.index_1;
+  t2.index_1 = $.add(t3, 1);
+  t2 = entry.get$key();
+  if (t3 !== (t3 | 0))
+    throw $.iae(t3);
+  if (t3 < 0 || t3 >= t1.length)
+    throw $.ioore(t3);
+  t1[t3] = t2;
+}
+};
+
+$$.HashMapImplementation_getKeys__ = {"":
+ ["list_2", "box_0"],
+ "super": "Closure",
+ call$2: function(key, value) {
+  var t1 = this.list_2;
+  var t2 = this.box_0;
+  var t3 = t2.i_1;
+  t2.i_1 = $.add(t3, 1);
+  if (t3 !== (t3 | 0))
+    throw $.iae(t3);
+  if (t3 < 0 || t3 >= t1.length)
+    throw $.ioore(t3);
+  t1[t3] = key;
+}
+};
+
 $$.TimeTracker_saveAll_anon = {"":
- [],
+ ["data_0"],
  "super": "Closure",
  call$1: function(task) {
-  if ($.window().get$localStorage().containsKey$1(task.get$name()) === true)
-    $.indexSet($.window().get$localStorage(), task.get$name(), $.toString($.add($.int_parse($.index($.window().get$localStorage(), task.get$name())), task.get$seconds())));
+  var t1 = this.data_0;
+  var t2 = t1.containsKey$1(task.get$name()) === true;
+  var t3 = task.get$name();
+  var t4 = task.get$seconds();
+  if (t2)
+    $.indexSet(t1, t3, $.add($.index(t1, t3), t4));
   else
-    $.indexSet($.window().get$localStorage(), task.get$name(), $.toString(task.get$seconds()));
+    $.indexSet(t1, t3, t4);
+}
+};
+
+$$._JsonStringifier_stringifyJsonValue_anon = {"":
+ ["this_2", "box_0"],
+ "super": "Closure",
+ call$2: function(key, value) {
+  var t1 = this.box_0;
+  var t2 = t1.first_10 !== true;
+  var t3 = this.this_2;
+  if (t2)
+    $.add$1(t3.get$sb(), ',"');
+  else
+    $.add$1(t3.get$sb(), '"');
+  t2 = this.this_2;
+  $._JsonStringifier_escape(t2.get$sb(), key);
+  $.add$1(t2.get$sb(), '":');
+  t2.stringifyValue$1(value);
+  t1.first_10 = false;
 }
 };
 
@@ -4047,8 +4699,8 @@ $$.LinkedHashMapImplementation_getValues__ = {"":
  call$1: function(entry) {
   var t1 = this.list_2;
   var t2 = this.box_0;
-  var t3 = t2.index_1;
-  t2.index_1 = $.add(t3, 1);
+  var t3 = t2.index_10;
+  t2.index_10 = $.add(t3, 1);
   t2 = entry.get$value();
   if (t3 !== (t3 | 0))
     throw $.iae(t3);
@@ -4064,8 +4716,8 @@ $$.HashMapImplementation_getValues__ = {"":
  call$2: function(key, value) {
   var t1 = this.list_2;
   var t2 = this.box_0;
-  var t3 = t2.i_1;
-  t2.i_1 = $.add(t3, 1);
+  var t3 = t2.i_10;
+  t2.i_10 = $.add(t3, 1);
   if (t3 !== (t3 | 0))
     throw $.iae(t3);
   if (t3 < 0 || t3 >= t1.length)
@@ -4122,47 +4774,6 @@ $$._NativeJsSendPort_send_anon0 = {"":
     t2 = this.box_0;
     t1._callback$2(t2.msg_1, t2.reply_2);
   }
-}
-};
-
-$$._StorageImpl_getKeys_anon = {"":
- ["keys_0"],
- "super": "Closure",
- call$2: function(k, v) {
-  return this.keys_0.push(k);
-}
-};
-
-$$.LinkedHashMapImplementation_getKeys__ = {"":
- ["list_2", "box_0"],
- "super": "Closure",
- call$1: function(entry) {
-  var t1 = this.list_2;
-  var t2 = this.box_0;
-  var t3 = t2.index_10;
-  t2.index_10 = $.add(t3, 1);
-  t2 = entry.get$key();
-  if (t3 !== (t3 | 0))
-    throw $.iae(t3);
-  if (t3 < 0 || t3 >= t1.length)
-    throw $.ioore(t3);
-  t1[t3] = t2;
-}
-};
-
-$$.HashMapImplementation_getKeys__ = {"":
- ["list_2", "box_0"],
- "super": "Closure",
- call$2: function(key, value) {
-  var t1 = this.list_2;
-  var t2 = this.box_0;
-  var t3 = t2.i_10;
-  t2.i_10 = $.add(t3, 1);
-  if (t3 !== (t3 | 0))
-    throw $.iae(t3);
-  if (t3 < 0 || t3 >= t1.length)
-    throw $.ioore(t3);
-  t1[t3] = key;
 }
 };
 
@@ -4332,8 +4943,18 @@ $.ge$slow = function(a, b) {
   return a.operator$ge$1(b);
 };
 
+$._JsonParser$ = function(json) {
+  var t1 = new $._JsonParser(json, $.get$length(json), 0);
+  t1._JsonParser$1(json);
+  return t1;
+};
+
 $.CastExceptionImplementation$ = function(actualType, expectedType) {
   return new $.CastExceptionImplementation(actualType, expectedType);
+};
+
+$.JsonUnsupportedObjectError$withCause = function(unsupportedObject, cause) {
+  return new $.JsonUnsupportedObjectError(unsupportedObject, cause);
 };
 
 $.IllegalJSRegExpException$ = function(_pattern, _errmsg) {
@@ -4401,6 +5022,88 @@ $.constructorNameFallback = function(obj) {
 
 $.NullPointerException$ = function(functionName, arguments$) {
   return new $.NullPointerException(functionName, arguments$);
+};
+
+$._JsonStringifier_escape = function(sb, s) {
+  var length$ = $.get$length(s);
+  var charCodes = $.ListImplementation_List(null);
+  for (var needsEscape = false, i = 0; $.ltB(i, length$); ++i) {
+    var charCode = $.charCodeAt(s, i);
+    if ($.ltB(charCode, 32)) {
+      charCodes.push(92);
+      switch (charCode) {
+        case 8:
+          charCodes.push(98);
+          break;
+        case 9:
+          charCodes.push(116);
+          break;
+        case 10:
+          charCodes.push(110);
+          break;
+        case 12:
+          charCodes.push(102);
+          break;
+        case 13:
+          charCodes.push(114);
+          break;
+        default:
+          charCodes.push(117);
+          var t1 = $.and($.shr(charCode, 12), 15);
+          if ($.ltB(t1, 10)) {
+            if (typeof t1 !== 'number')
+              throw $.iae(t1);
+            t1 = 48 + t1;
+          } else {
+            if (typeof t1 !== 'number')
+              throw $.iae(t1);
+            t1 = 87 + t1;
+          }
+          charCodes.push(t1);
+          t1 = $.and($.shr(charCode, 8), 15);
+          if ($.ltB(t1, 10)) {
+            if (typeof t1 !== 'number')
+              throw $.iae(t1);
+            t1 = 48 + t1;
+          } else {
+            if (typeof t1 !== 'number')
+              throw $.iae(t1);
+            t1 = 87 + t1;
+          }
+          charCodes.push(t1);
+          t1 = $.and($.shr(charCode, 4), 15);
+          if ($.ltB(t1, 10)) {
+            if (typeof t1 !== 'number')
+              throw $.iae(t1);
+            t1 = 48 + t1;
+          } else {
+            if (typeof t1 !== 'number')
+              throw $.iae(t1);
+            t1 = 87 + t1;
+          }
+          charCodes.push(t1);
+          t1 = $.and(charCode, 15);
+          if ($.ltB(t1, 10)) {
+            if (typeof t1 !== 'number')
+              throw $.iae(t1);
+            t1 = 48 + t1;
+          } else {
+            if (typeof t1 !== 'number')
+              throw $.iae(t1);
+            t1 = 87 + t1;
+          }
+          charCodes.push(t1);
+          break;
+      }
+      needsEscape = true;
+    } else if ($.eqB(charCode, 34) || $.eqB(charCode, 92)) {
+      charCodes.push(92);
+      charCodes.push(charCode);
+      needsEscape = true;
+    } else
+      charCodes.push(charCode);
+  }
+  $.add$1(sb, needsEscape ? $.StringImplementation_String$fromCharCodes(charCodes) : s);
 };
 
 $._serializeMessage = function(message) {
@@ -4495,7 +5198,7 @@ $.substring$2 = function(receiver, startIndex, endIndex) {
   if (endIndex == null)
     endIndex = length$;
   $.checkNum(endIndex);
-  if (startIndex < 0)
+  if ($.ltB(startIndex, 0))
     throw $.$$throw($.IndexOutOfRangeException$(startIndex));
   if ($.gtB(startIndex, endIndex))
     throw $.$$throw($.IndexOutOfRangeException$(startIndex));
@@ -4544,6 +5247,10 @@ $.stringJoinUnchecked = function(array, separator) {
 
 $.gt = function(a, b) {
   return typeof a === 'number' && typeof b === 'number' ? a > b : $.gt$slow(a, b);
+};
+
+$.StringImplementation_String$fromCharCodes = function(charCodes) {
+  return $.StringImplementation__fromCharCodes(charCodes);
 };
 
 $.filter = function(receiver, predicate) {
@@ -4904,6 +5611,10 @@ $.Primitives_objectTypeName = function(object) {
   return $.charCodeAt(name$, 0) === 36 ? $.substring$1(name$, 1) : name$;
 };
 
+$.leB = function(a, b) {
+  return typeof a === 'number' && typeof b === 'number' ? a <= b : $.le$slow(a, b) === true;
+};
+
 $.mod = function(a, b) {
   if ($.checkNumbers(a, b)) {
     var result = a % b;
@@ -4945,6 +5656,16 @@ $.iterator = function(receiver) {
   if ($.isJsArray(receiver))
     return $.ListIterator$(receiver);
   return receiver.iterator$0();
+};
+
+$.JSON_stringify = function(object) {
+  return $._JsonStringifier_stringify(object);
+};
+
+$._JsonStringifier_stringify = function(object) {
+  var output = $.StringBufferImpl$('');
+  $._JsonStringifier$(output).stringifyValue$1(object);
+  return output.toString$0();
 };
 
 $._FrozenElementListIterator$ = function(_list) {
@@ -5182,6 +5903,12 @@ $.isInfinite = function(receiver) {
   return receiver == Infinity || receiver == -Infinity;
 };
 
+$.le$slow = function(a, b) {
+  if ($.checkNumbers(a, b))
+    return a <= b;
+  return a.operator$le$1(b);
+};
+
 $._ChildrenElementList$_wrap = function(element) {
   return new $._ChildrenElementList(element, element.get$$$dom_children());
 };
@@ -5222,6 +5949,10 @@ $.Arrays_copy = function(src, srcStart, dst, dstStart, count) {
     }
 };
 
+$.JsonUnsupportedObjectError$ = function(unsupportedObject) {
+  return new $.JsonUnsupportedObjectError(unsupportedObject, null);
+};
+
 $.dynamicSetMetadata = function(inputTable) {
   var t1 = $.buildDynamicMetadata(inputTable);
   $._dynamicMetadata(t1);
@@ -5237,6 +5968,10 @@ $._convertDartToNative_PrepareForStructuredClone = function(value) {
   var copy = new $._convertDartToNative_PrepareForStructuredClone_walk(t1, t2, t3).call$1(value);
   t4.call$0();
   return copy;
+};
+
+$._JsonStringifier$ = function(sb) {
+  return new $._JsonStringifier(sb, []);
 };
 
 $.endsWith = function(receiver, other) {
@@ -5316,10 +6051,18 @@ $._FixedSizeListIterator$ = function(array) {
   return new $._FixedSizeListIterator($.get$length(array), array, 0);
 };
 
+$.JSON_parse = function(json) {
+  return $._JsonParser$(json).parseToplevel$0();
+};
+
 $._JsSerializer$ = function() {
   var t1 = new $._JsSerializer(0, $._MessageTraverserVisitedMap$());
   t1._JsSerializer$0();
   return t1;
+};
+
+$.double_parse = function(string) {
+  return $.Primitives_parseDouble(string);
 };
 
 $._FrozenElementList$_wrap = function(_nodeList) {
@@ -5628,6 +6371,8 @@ $._TextTrackEventsImpl$ = function(_ptr) {
 
 $.charCodeAt = function(receiver, index) {
   if (typeof receiver === 'string') {
+    if (!(typeof index === 'number'))
+      throw $.$$throw($.IllegalArgumentException$(index));
     if (index < 0)
       throw $.$$throw($.IndexOutOfRangeException$(index));
     if (index >= receiver.length)
@@ -5742,6 +6487,15 @@ $.DateImplementation$fromMillisecondsSinceEpoch = function(millisecondsSinceEpoc
   return t1;
 };
 
+$.Primitives_stringFromCharCodes = function(charCodes) {
+  for (var t1 = $.iterator(charCodes); t1.hasNext$0() === true;) {
+    var t2 = t1.next$0();
+    if (!(typeof t2 === 'number' && Math.floor(t2) === t2))
+      throw $.$$throw($.IllegalArgumentException$(t2));
+  }
+  return String.fromCharCode.apply(null, charCodes);
+};
+
 $.Primitives_objectToString = function(object) {
   return 'Instance of \'' + $.S($.Primitives_objectTypeName(object)) + '\'';
 };
@@ -5778,6 +6532,13 @@ $._Lists_indexOf = function(a, element, startIndex, endIndex) {
       return i;
   }
   return -1;
+};
+
+$.StringImplementation__fromCharCodes = function(charCodes) {
+  $.checkNull(charCodes);
+  if (!$.isJsArray(charCodes))
+    charCodes = $.ListImplementation_List$from(charCodes);
+  return $.Primitives_stringFromCharCodes(charCodes);
 };
 
 $.set$length = function(receiver, newLength) {
@@ -5858,6 +6619,10 @@ $.startsWith = function(receiver, other) {
   if (length$ > receiver.length)
     return false;
   return other == receiver.substring(0, length$);
+};
+
+$.le = function(a, b) {
+  return typeof a === 'number' && typeof b === 'number' ? a <= b : $.le$slow(a, b);
 };
 
 $.toStringForNativeObject = function(obj) {
@@ -5949,6 +6714,16 @@ $._ElementEventsImpl$ = function(_ptr) {
 $.Collections_forEach = function(iterable, f) {
   for (var t1 = $.iterator(iterable); t1.hasNext$0() === true;)
     f.call$1(t1.next$0());
+};
+
+$.Primitives_parseDouble = function(string) {
+  $.checkString(string);
+  if (!/^\s*(?:NaN|[+-]?(?:Infinity|(?:\.\d+|\d+(?:\.\d+)?)(?:[eE][+-]?\d+)?))\s*$/.test(string))
+    throw $.$$throw($.FormatException$(string));
+  var result = parseFloat(string);
+  if ($.isNaN(result) === true && !$.eqB(string, 'NaN'))
+    throw $.$$throw($.FormatException$(string));
+  return result;
 };
 
 $.ListImplementation_List = function(length$) {
@@ -6293,20 +7068,67 @@ $.CTC1 = new Isolate.$isolateProperties.UnsupportedOperationException('Cannot ad
 $.CTC11 = new Isolate.$isolateProperties.NoMoreElementsException();
 $.CTC21 = new Isolate.$isolateProperties.NotImplementedException(null);
 $.Duration_HOURS_PER_DAY = 24;
+$._JsonParser_NEW_LINE = 10;
 $.HashMapImplementation__INITIAL_CAPACITY = 8;
+$._JsonParser_TAB = 9;
+$._JsonParser_DOT = 46;
+$._JsonParser_CHAR_B = 98;
+$._JsonParser_TRUE_LITERAL = 116;
+$._JsonParser_tokens = null;
+$._JsonParser_BACKSLASH = 92;
+$._JsonParser_CARRIAGE_RETURN = 13;
+$._JsonParser_CHAR_1 = 49;
+$._JsonParser_MINUS = 45;
+$._JsonParser_NULL_STRING = 'null';
+$._JsonParser_FORM_FEED = 12;
 $.Duration_MINUTES_PER_HOUR = 60;
+$._JsonParser_CHAR_E = 101;
+$._JsonParser_CHAR_T = 116;
 $.Primitives_DOLLAR_CHAR_VALUE = 36;
+$._JsonParser_SLASH = 47;
+$._JsonParser_CHAR_N = 110;
 $.HashMapImplementation__DELETED_KEY = Isolate.$isolateProperties.CTC16;
+$._JsonParser_CHAR_3 = 51;
+$._JsonParser_CHAR_7 = 55;
+$._JsonParser_NULL_LITERAL = 110;
+$._JsonParser_CHAR_R = 114;
+$._JsonParser_BACKSPACE = 8;
+$._JsonParser_COMMA = 44;
+$._JsonParser_CHAR_0 = 48;
+$._JsonParser_SPACE = 32;
 $._getTypeNameOf = null;
+$._JsonParser_LAST_ASCII = 125;
 $.Duration_MILLISECONDS_PER_HOUR = 3600000;
+$._JsonParser_STRING_LITERAL = 34;
 $.Duration_MILLISECONDS_PER_MINUTE = 60000;
 $._cachedBrowserPrefix = null;
+$._JsonParser_CHAR_5 = 53;
 $.Duration_MILLISECONDS_PER_DAY = 86400000;
+$._JsonParser_CHAR_4 = 52;
+$._JsonParser_CHAR_U = 117;
 $._TimerFactory__factory = null;
+$._JsonParser_RBRACKET = 93;
+$._JsonParser_FALSE_STRING = 'false';
+$._JsonParser_TRUE_STRING = 'true';
+$._JsonParser_LBRACE = 123;
+$._JsonParser_CHAR_CAPITAL_E = 69;
+$._JsonParser_QUOTE = 34;
 $.Duration_MILLISECONDS_PER_SECOND = 1000;
 $._ReceivePortImpl__nextFreeId = 1;
+$._JsonParser_LBRACKET = 91;
 $.DateImplementation__MAX_MILLISECONDS_SINCE_EPOCH = 8640000000000000;
+$._JsonParser_RBRACE = 125;
+$._JsonParser_NUMBER_LITERAL = 45;
+$._JsonParser_CHAR_9 = 57;
+$._JsonParser_CHAR_F = 102;
+$._JsonParser_PLUS = 43;
+$._JsonParser_FALSE_LITERAL = 102;
+$._JsonParser_CHAR_2 = 50;
+$._JsonParser_COLON = 58;
+$._JsonParser_CHAR_8 = 56;
 $.Duration_SECONDS_PER_MINUTE = 60;
+$._JsonParser_CHAR_6 = 54;
+$._JsonParser_WHITESPACE = 32;
 var $ = null;
 Isolate.$finishClasses($$);
 $$ = {};
