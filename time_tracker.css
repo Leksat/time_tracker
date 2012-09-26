@@ -16,8 +16,12 @@
 
 @-webkit-keyframes idle {
      70% {background-color: white;}
-     75% {background-color: #FF5C00;}
-     80% {background-color: white;}
+     71% {background-color: red;}
+     72% {background-color: white;}
+     73% {background-color: red;}
+     74% {background-color: white;}
+     75% {background-color: red;}
+     76% {background-color: white;}
 }
 
 .idle {
