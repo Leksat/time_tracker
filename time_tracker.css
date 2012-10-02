@@ -4,13 +4,12 @@
 }
 
 @-webkit-keyframes working {
-     70% {background-color: white;}
-     75% {background-color: #E4FFD4;}
-     80% {background-color: white;}
+     50% {background-color: white;}
+     100% {background-color: #E4FFD4;}
 }
 
 .working {
-  -webkit-animation: working 30s infinite alternate;
+  -webkit-animation: working 3s infinite alternate;
   background-color: white;
 }
 
