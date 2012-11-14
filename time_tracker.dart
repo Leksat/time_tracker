@@ -1,7 +1,7 @@
 
-#import('dart:html');
-#import('dart:isolate');
-#import('dart:json');
+import 'dart:html';
+import 'dart:isolate';
+import 'dart:json';
 
 void main() {
   new TimeTracker();
@@ -21,7 +21,7 @@ class TimeTracker {
     // load from storage
     var data = _load();
     
-    if (data.isEmpty()) {
+    if (data.isEmpty) {
       tasks.add(new Task(this));
     } else {
       data.forEach((name, seconds) {
@@ -67,7 +67,7 @@ class TimeTracker {
     if (window.localStorage.containsKey('time_tracker')) {
       try {
         Map data = JSON.parse(window.localStorage['time_tracker']);
-        data.getKeys().forEach((key) {
+        data.keys.forEach((key) {
           if (key is! String || data[key] is! int) {
             data.remove(key);
           }
@@ -174,8 +174,8 @@ class Task {
   }
   
   String formatTimeString(int seconds) {
-    var h = (seconds / (60*60)).toInt();
-    var m = ((seconds - h*60*60) / 60).toInt();
+    var h = seconds ~/ (60*60);
+    var m = (seconds - h*60*60) ~/ 60;
     var s = seconds % 60;
     s = (s >= 10) ? s : '0${s}';
     m = (m >= 10) ? m : '0${m}';
@@ -188,15 +188,15 @@ class Task {
       return -1;
     }
     var h = int.parse(parts[0]);
-    if (h.isNaN() || h <0) {
+    if (h.isNaN || h <0) {
       return -1;
     }
     var m = int.parse(parts[1]);
-    if (m.isNaN() || m < 0 || m > 60) {
+    if (m.isNaN || m < 0 || m > 60) {
       return -1;
     }
     var s = int.parse(parts[2]);
-    if (s.isNaN() || s < 0 || s > 60) {
+    if (s.isNaN || s < 0 || s > 60) {
       return -1;
     }
     return h*60*60 + m*60 + s;
