@@ -1,0 +1,43 @@
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body,html{
+  height:100%;
+}
+
+#main-wrapper {
+  padding: 0 10px;
+  height: 100%;
+}
+
+#time-tracker {
+  padding: 10px 0;
+}
+
+/* Working animation */
+@-webkit-keyframes working {
+  50% {background-color: white;}
+  100% {background-color: #E4FFD4;}
+}
+.working {
+  -webkit-animation: working 3s infinite alternate;
+  background-color: white;
+}
+
+/* Idle animation */
+@-webkit-keyframes idle {
+  90% {background-color: white;}
+  91% {background-color: red;}
+  92% {background-color: white;}
+  93% {background-color: red;}
+  94% {background-color: white;}
+  95% {background-color: red;}
+  96% {background-color: white;}
+}
+.idle {
+  -webkit-animation: idle 30s infinite alternate;
+  background-color: white;
+}

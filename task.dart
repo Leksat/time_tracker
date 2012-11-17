@@ -1,86 +1,69 @@
 
 part of time_tracker;
 
+// TODO: use one button for Start/Stop.
+
 /**
  * Task.
  */
 class Task {
-  int seconds;
+  String uuid;
   String name;
-  DivElement taskDiv;
-  InputElement nameInput;
-  InputElement timeInput;
-  DivElement tasksDiv;
-  Tracker tracker;
+  int seconds;
+  String get time {
+    return _formatTimeString(seconds);
+  }
+  void set time(time) {
+    seconds = _parseTimeString(time);
+  }
   Timer timer;
   bool working = false;
 
-  Task(this.tracker, [this.name = '', this.seconds = 0]) {
-    // copy task from template
-    taskDiv = document.query('#task-template').clone(true);
-    taskDiv.attributes.remove('id');
-    
-    // init inputs
-    nameInput = taskDiv.query('.name');
-    timeInput = taskDiv.query('.time');
-    nameInput.value = name;
-    timeInput.value = formatTimeString(seconds);
-    
-    // attach to dom
-    tracker.tasksDiv.elements.add(taskDiv);
-    
-    // attach event handlers
-    nameInput.on.keyUp.add((Event event) {
-      name = (event.srcElement as InputElement).value;
-    });
-    timeInput.on.keyUp.add((Event event) {
-      InputElement timeInput = event.srcElement;
-      var s = parseTimeString(timeInput.value);
-      if (s != -1) {
-        seconds = s;
-        timeInput.classes.remove('error');
-      } else {
-        timeInput.classes.add('error');
-      }
-    });
-    taskDiv.query('.start').on.click.add((event) => this.start());
-    taskDiv.query('.stop').on.click.add((event) => this.stop());
-    taskDiv.query('.delete').on.click.add((Event event) {
-      if (window.confirm('Do you really want to remove this task?')) {
-        this.remove();
-        tracker.tasks.removeRange(tracker.tasks.indexOf(this), 1);
-      }
-    });
-  }
+  /**
+   * Constructor.
+   */
+  Task(this.uuid, [this.name = '', this.seconds = 0]) {}
   
-  void remove() {
-    stop();
-    taskDiv.remove();
-  }
-  
-  void start() {
+  /**
+   * Starts time tracking.
+   */
+  void start([Event e]) {
     if (!working) {
-      timeInput.disabled = true;
+      // TODO: disable time input.
       var started = new Date.now().subtract(new Duration(seconds: seconds));
       timer = new Timer.repeating(1000, (timer) {
         seconds = (new Date.now()).difference(started).inSeconds;
-        timeInput.value = formatTimeString(seconds);
+        watchers.dispatch();
       });
       working = true;
-      tracker.setState(true);
+      timeTracker.activeTasks++;
     }
   }
   
-  void stop() {
+  /**
+   * Stops time tracking.
+   */
+  void stop([Event e]) {
     if (working) {
       timer.cancel();
-      timeInput.disabled = false;
+      // TODO: enable time input. 
       working = false;
-      tracker.setState(false);
+      timeTracker.activeTasks--;
     }
   }
   
-  String formatTimeString(int seconds) {
+  /**
+   * Removes task.
+   */
+  void delete([Event e]) {
+    stop();
+    timeTracker.tasks.remove(uuid);
+  }
+  
+  /**
+   * Returns time string in "H:MM:SS" format.
+   */
+  String _formatTimeString(int seconds) {
     var h = seconds ~/ (60*60);
     var m = (seconds - h*60*60) ~/ 60;
     var s = seconds % 60;
@@ -88,8 +71,11 @@ class Task {
     m = (m >= 10) ? m : '0${m}';
     return '${h}:${m}:${s}';
   }
-  
-  int parseTimeString(String time) {
+
+  /**
+   * Returns seconds count parsing them from time string in "H:MM:SS" format.
+   */
+  int _parseTimeString(String time) {
     var parts = time.split(':');
     if (parts.length != 3) {
       return -1;
