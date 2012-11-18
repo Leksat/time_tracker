@@ -1,8 +1,6 @@
 
 part of time_tracker;
 
-// TODO: use one button for Start/Stop.
-
 /**
  * Task.
  */
@@ -18,6 +16,7 @@ class Task {
   }
   Timer timer;
   bool working = false;
+  String startStopLabel = 'Start';
 
   /**
    * Constructor.
@@ -27,27 +26,20 @@ class Task {
   /**
    * Starts time tracking.
    */
-  void start([Event e]) {
+  void startStop([Event e]) {
     if (!working) {
-      // TODO: disable time input.
       var started = new Date.now().subtract(new Duration(seconds: seconds));
       timer = new Timer.repeating(1000, (timer) {
         seconds = (new Date.now()).difference(started).inSeconds;
         watchers.dispatch();
       });
       working = true;
+      startStopLabel = 'Stop';
       timeTracker.activeTasks++;
-    }
-  }
-  
-  /**
-   * Stops time tracking.
-   */
-  void stop([Event e]) {
-    if (working) {
+    } else {
       timer.cancel();
-      // TODO: enable time input. 
       working = false;
+      startStopLabel = 'Start';
       timeTracker.activeTasks--;
     }
   }
@@ -56,7 +48,9 @@ class Task {
    * Removes task.
    */
   void delete([Event e]) {
-    stop();
+    if (working) {
+      startStop();
+    }
     timeTracker.tasks.remove(uuid);
   }
   
