@@ -19,8 +19,8 @@
 
     <div id="tasks">
 
-      <template iterate='task in timeTracker.tasks.values'>
-        <div class="task" rel="{{task.uuid}}">
+      <template iterate='task in timeTracker.tasks'>
+        <div class="task">
           <input class="name" type="text" data-bind="value:task.name" />
           <input class="time" type="text" data-bind="value:task.time" disabled="{{task.working}}" size="6" />
           <button data-action="click:task.startStop">{{task.startStopLabel}}</button>

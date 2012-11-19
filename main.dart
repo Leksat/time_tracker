@@ -4,7 +4,6 @@ library time_tracker;
 import 'dart:html';
 import 'dart:isolate';
 import 'dart:json';
-import 'package:uuid/uuid.dart';
 import 'package:web_components/watcher.dart' as watchers;
 
 part 'task.dart';

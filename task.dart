@@ -5,23 +5,47 @@ part of time_tracker;
  * Task.
  */
 class Task {
-  String uuid;
-  String name;
-  int seconds;
+  String name = '';
+  int seconds = 0;
   String get time {
     return _formatTimeString(seconds);
   }
   void set time(time) {
-    seconds = _parseTimeString(time);
+    var _seconds = _parseTimeString(time);
+    if (_seconds != -1) {
+      seconds = _seconds;
+    }
   }
-  Timer timer;
+  Timer _timer;
   bool working = false;
   String startStopLabel = 'Start';
 
   /**
    * Constructor.
    */
-  Task(this.uuid, [this.name = '', this.seconds = 0]) {}
+  Task() {}
+  
+  /**
+   * From string constructor.
+   */
+  Task.fromMap(Map values) {
+    if (values.containsKey('name') && values['name'] is String) {
+      name = values['name'];
+    }
+    if (values.containsKey('seconds') && values['seconds'] is int) {
+      seconds = values['seconds'];
+    } 
+  }
+  
+  /**
+   * Returns a map with "primary" properties values.
+   */
+  Map toMap() {
+    return {
+      'name': name,
+      'seconds' : seconds
+    };
+  }
   
   /**
    * Starts time tracking.
@@ -29,7 +53,7 @@ class Task {
   void startStop([Event e]) {
     if (!working) {
       var started = new Date.now().subtract(new Duration(seconds: seconds));
-      timer = new Timer.repeating(1000, (timer) {
+      _timer = new Timer.repeating(1000, (timer) {
         seconds = (new Date.now()).difference(started).inSeconds;
         watchers.dispatch();
       });
@@ -37,7 +61,7 @@ class Task {
       startStopLabel = 'Stop';
       timeTracker.activeTasks++;
     } else {
-      timer.cancel();
+      _timer.cancel();
       working = false;
       startStopLabel = 'Start';
       timeTracker.activeTasks--;
@@ -51,7 +75,7 @@ class Task {
     if (working) {
       startStop();
     }
-    timeTracker.tasks.remove(uuid);
+    timeTracker.tasks.removeAt(timeTracker.tasks.indexOf(this));
   }
   
   /**

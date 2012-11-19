@@ -1,4 +1,3 @@
 name: time_tracker
 dependencies:
   web_components: ">=0.2.5 <0.2.6"
-  uuid: 0.0.8

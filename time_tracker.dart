@@ -6,7 +6,7 @@ part of time_tracker;
  */
 class TimeTracker {
   String wrapperClass = 'idle';
-  Map<String, Task> tasks = new Map();
+  List<Task> tasks = new List();
   int _activeTasks = 0;
   int get activeTasks {
     return _activeTasks;
@@ -19,7 +19,7 @@ class TimeTracker {
       wrapperClass = 'idle';
     }
   }
-  Uuid _uuid = new Uuid();
+  String _url = window.location.toString();
 
   /**
    * Constructor.
@@ -30,8 +30,8 @@ class TimeTracker {
     if (data.isEmpty) {
       createNewTask();
     } else {
-      data.forEach((uuid, values) {
-        tasks[uuid] = new Task(uuid, values['name'], values['seconds']);
+      data.forEach((values) {
+        tasks.add(new Task.fromMap(values));
       });
     }
     // Initialize autosave.
@@ -42,8 +42,7 @@ class TimeTracker {
    * Creates new task.
    */
   void createNewTask([Event e]) {
-    var uuid = _uuid.v1();
-    tasks[uuid] = new Task(uuid);
+    tasks.add(new Task());
   }
   
   /**
@@ -58,34 +57,27 @@ class TimeTracker {
    * Saves all tasks to storage.
    */
   void _saveToStorage() {
-    var data = {};
-    tasks.forEach((uuid, task) {
-      data[uuid] = {
-        'name': task.name,
-        'seconds': task.seconds,
-      };
+    var data = [];
+    tasks.forEach((task) {
+      data.add(task.toMap());
     });
-    window.localStorage['time_tracker'] = JSON.stringify(data);
+    window.localStorage[_url] = JSON.stringify(data);
   }
 
   /**
    * Loads saved tasks from storage.
    */
-  Map<String, Map> _loadFromStorage() {
-    if (window.localStorage.containsKey('time_tracker')) {
+  List<Map> _loadFromStorage() {
+    if (window.localStorage.containsKey(_url)) {
       try {
-        Map data = JSON.parse(window.localStorage['time_tracker']);
-        // Check that data has correct format.
-        data.keys.forEach((key) {
-          if (key is! String || data[key] is! Map
-              || !data[key].containsKey('name')
-              || !data[key].containsKey('seconds')) {
-            data.remove(key);
-          }
-        });
-        return data;
+        var data = JSON.parse(window.localStorage[_url]);
+        if (data is List) {
+          // Check that nested values are maps.
+          data.filter((value) => value is Map);
+          return data;
+        }
       } on Exception catch (e) {} 
     }
-    return {};
+    return [];
   }
 }
