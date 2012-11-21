@@ -18,7 +18,7 @@ class Task {
   }
   Timer _timer;
   bool working = false;
-  String startStopLabel = 'Start';
+  String toggleStateLabel = 'Start';
 
   /**
    * Constructor.
@@ -50,7 +50,7 @@ class Task {
   /**
    * Starts time tracking.
    */
-  void startStop([Event e]) {
+  void toggleState([Event e]) {
     if (!working) {
       var started = new Date.now().subtract(new Duration(seconds: seconds));
       _timer = new Timer.repeating(1000, (timer) {
@@ -58,12 +58,12 @@ class Task {
         watchers.dispatch();
       });
       working = true;
-      startStopLabel = 'Stop';
+      toggleStateLabel = 'Stop';
       timeTracker.activeTasks++;
     } else {
       _timer.cancel();
       working = false;
-      startStopLabel = 'Start';
+      toggleStateLabel = 'Start';
       timeTracker.activeTasks--;
     }
   }
@@ -73,7 +73,7 @@ class Task {
    */
   void delete([Event e]) {
     if (working) {
-      startStop();
+      toggleState();
     }
     timeTracker.tasks.removeAt(timeTracker.tasks.indexOf(this));
   }
