@@ -26,7 +26,7 @@ class Task {
   Task() {}
   
   /**
-   * From string constructor.
+   * From map constructor.
    */
   Task.fromMap(Map values) {
     if (values.containsKey('name') && values['name'] is String) {
@@ -48,7 +48,7 @@ class Task {
   }
   
   /**
-   * Starts time tracking.
+   * Starts or stops time tracking.
    */
   void toggleState([Event e]) {
     if (!working) {
