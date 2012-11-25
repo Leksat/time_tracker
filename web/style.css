@@ -11,10 +11,37 @@ body,html{
 #main-wrapper {
   padding: 0 10px;
   height: 100%;
+  min-width: 300px;
 }
 
 #time-tracker {
   padding: 10px 0;
+}
+
+/* Fluid layout */
+
+.time,
+.task .action {
+  width: 62px;
+}
+
+.task .name-wrapper {
+  float: left;
+  width: 100%;
+}
+
+.task .name-inner {
+  margin-right: 208px;
+}
+
+.task .name {
+  width: 100%;
+}
+
+.task .other-wrapper {
+  float: left;
+  width: 200px;
+  margin-left: -200px;
 }
 
 /* Working animation */

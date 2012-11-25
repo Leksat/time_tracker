@@ -5,6 +5,7 @@ part of time_tracker;
  * Time tracker.
  */
 class TimeTracker {
+  final int dataSchemaVersion = 1;
   String wrapperClass = 'idle';
   List<Task> tasks = new List();
   int _activeTasks = 0;
@@ -27,10 +28,14 @@ class TimeTracker {
   TimeTracker() {
     // Load saved data from storage.
     var data = _loadFromStorage();
-    if (data.isEmpty) {
+    // Restore window size. Position also could be restored, but it works
+    // unexpected on multi-monitors.
+    window.resizeTo(data['window']['width'], data['window']['height']);
+    // Restore tasks.
+    if (data['tasks'].isEmpty) {
       createNewTask();
     } else {
-      data.forEach((values) {
+      data['tasks'].forEach((values) {
         tasks.add(new Task.fromMap(values));
       });
     }
@@ -57,27 +62,47 @@ class TimeTracker {
    * Saves all tasks to storage.
    */
   void _saveToStorage() {
-    var data = [];
+    var _tasks = [];
     tasks.forEach((task) {
-      data.add(task.toMap());
+      _tasks.add(task.toMap());
     });
-    window.localStorage[_url] = JSON.stringify(data);
+    window.localStorage[_url] = JSON.stringify({
+      'dataSchemaVersion': dataSchemaVersion,
+      'tasks': _tasks,
+      'window': _getWindowParams()
+    });
   }
 
   /**
    * Loads saved tasks from storage.
    */
-  List<Map> _loadFromStorage() {
+  Map _loadFromStorage() {
     if (window.localStorage.containsKey(_url)) {
       try {
         var data = JSON.parse(window.localStorage[_url]);
-        if (data is List) {
-          // Check that nested values are maps.
-          data.filter((value) => value is Map);
-          return data;
+        if (data is Map && data.containsKey('dataSchemaVersion')) {
+          if (data['dataSchemaVersion'] == dataSchemaVersion) {
+            return data;
+          } else {
+            // There could be data updates.
+          }
         }
       } on Exception catch (e) {} 
     }
-    return [];
+    // Defaults.
+    return {
+      'tasks': [],
+      'window': _getWindowParams()
+    };
+  }
+  
+  /**
+   * Returns window parameters.
+   */
+  Map _getWindowParams() {
+    return {
+      'width': window.innerWidth,
+      'height': window.innerHeight
+    };
   }
 }

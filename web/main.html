@@ -21,10 +21,16 @@
 
       <template iterate='task in timeTracker.tasks'>
         <div class="task">
-          <input class="name" type="text" data-bind="value:task.name" />
-          <input class="time" type="text" data-bind="value:task.time" disabled="{{task.working}}" size="6" />
-          <button data-action="click:task.toggleState">{{task.toggleStateLabel}}</button>
-          <button data-action="click:task.delete">Delete</button>
+          <div class="name-wrapper">
+            <div class="name-inner">
+              <input class="name" type="text" data-bind="value:task.name" />
+            </div>
+          </div>
+          <div class="other-wrapper">
+	          <input class="time" type="text" data-bind="value:task.time" disabled="{{task.working}}" />
+	          <button class="action" data-action="click:task.toggleState">{{task.toggleStateLabel}}</button>
+	          <button class="action" data-action="click:task.delete">Delete</button>
+	        </div>
         </div>
       </template>
 
