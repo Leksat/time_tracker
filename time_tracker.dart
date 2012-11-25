@@ -101,8 +101,8 @@ class TimeTracker {
    */
   Map _getWindowParams() {
     return {
-      'width': window.innerWidth,
-      'height': window.innerHeight
+      'width': window.outerWidth,
+      'height': window.outerHeight
     };
   }
 }
